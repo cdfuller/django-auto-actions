@@ -45,9 +45,16 @@ class AutoActionsMixin:
         actions.update(auto_actions)
         return actions
 
+    def _get_auto_action_fields(self):
+        exclude_fields = getattr(self, "exclude_auto_actions", [])
+        include_fields = getattr(self, "include_auto_actions", [])
+        if include_fields:
+            return include_fields
+        else:
+            return [f for f in self.model._meta.fields if f.name not in exclude_fields]
+
     def _get_auto_actions(self):
         auto_actions = {}
-        exclude_fields = getattr(self, "exclude_auto_actions", [])
         now = timezone.now()
 
         def create_action(field_name, value, display_value):
@@ -66,9 +73,7 @@ class AutoActionsMixin:
 
             return action
 
-        for field in (
-            f for f in self.model._meta.fields if f.name not in exclude_fields
-        ):
+        for field in self._get_auto_action_fields():
             field_name = field.name
 
             if isinstance(field, BooleanField):
